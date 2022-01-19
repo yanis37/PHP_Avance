@@ -1,0 +1,16 @@
+{% extends 'base.html.twig' %}
+
+{% block body %}
+
+<h1>Liste des films :</h1>
+
+    {% for film in films %}
+        <h2>{{ film.name }}</h2>
+        <p>Description : {{ film.description }}</p>
+        <p>Note : {{ film.note }} / 10</p>
+        <p>{{ film.votersNumber }} personnes ont voté</p>
+    {%  endfor %}
+
+
+
+{% endblock body%}
