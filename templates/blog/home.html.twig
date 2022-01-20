@@ -2,13 +2,16 @@
 
 {% block body %}
 
-<h1>Liste des films :</h1>
+
+<h2>Liste des films : </h2>
 
     {% for film in films %}
-        <h2>{{ film.name }}</h2>
-        <p>Description : {{ film.description }}</p>
-        <p>Note : {{ film.note }} / 10</p>
-        <p>{{ film.votersNumber }} personnes ont voté</p>
+
+        <h3><a href="{{ path('film') }}"> • {{ film.name }} </a></h3>
+        <p> - Description : {{ film.description }}</p>
+        <p> - Note : {{ film.note }} / 10</p>
+        <p> - {{ film.votersNumber }} personnes ont voté.</p>
+
     {%  endfor %}
 
 

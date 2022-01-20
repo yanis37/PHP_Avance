@@ -5,12 +5,16 @@ namespace App\Controller;
 use App\Repository\FilmRepository;
 use ContainerMeCM7Uj\getForm_ChoiceListFactory_CachedService;
 use Doctrine\ORM\EntityManagerInterface;
-use http\Client\Request;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\Form\Extension\Core\Type\SubmitType;
+use Symfony\Component\Form\Extension\Core\Type\TextareaType;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Annotation\Route;
 use App\Entity\Film;
+use Doctrine\Common\Persistence\ObjectManager;
+use App\Services\VerifFilm;
+
 
 class BlogController extends AbstractController
 {
@@ -44,28 +48,39 @@ class BlogController extends AbstractController
     /**
      * @Route("/add", name="ajout", methods={"GET","POST"})
      */
-    public function ajout(Request $request, EntityManagerInterface $em): Response
+    public function ajout(Request $request, EntityManagerInterface $manager): Response
     {
-        /*
-        $form = $this->createFormBuilder()
-            ->add('titre')
+        $film = new Film();
+
+        $form = $this->createFormBuilder($film)
+            ->add('name')
             ->add('note')
-            ->add('email')
-            ->add('Ajouter', SubmitType::class)
+            ->add('votersNumber')
+            ->add('Ajouter', SubmitType::class, [
+                'attr'=>[
+                    'style' => 'margin-top:1em;'
+                ]
+            ])
             ->getForm();
+
+        $omdbapi = new VerifFilm("16ced50c");
 
         $form->handleRequest($request);
 
-
         if($form->isSubmitted() && $form->isValid()){
-            $film = new Film;
-            $film->setName(data['titre']);
-            $film->setVotersNumber(data['vote']);
+            if($omdbapi->exist($film->getName())=="True") {
+                $film->setDescription($omdbapi->getDesc($film->getName()));
+                $manager->persist($film);
+                $manager->flush();
+                $this->addFlash('success', 'Le film a bien été ajouté !');
+            } else {
+                $this->addFlash('error', 'Le film est introuvable.');
+            }
+        }
 
-        }*/
         return $this->render('blog/ajout.html.twig', [
             'controller_name' => 'BlogController',
-            /*'form'=>$form->createView()*/
+            'form'=>$form->createView(),
         ]);
     }
     /**
