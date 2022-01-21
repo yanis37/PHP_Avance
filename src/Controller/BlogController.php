@@ -6,14 +6,19 @@ use App\Repository\FilmRepository;
 use ContainerMeCM7Uj\getForm_ChoiceListFactory_CachedService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\Form\Extension\Core\Type\FileType;
 use Symfony\Component\Form\Extension\Core\Type\SubmitType;
 use Symfony\Component\Form\Extension\Core\Type\TextareaType;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Annotation\Route;
 use App\Entity\Film;
+use App\Entity\UploadFile;
 use Doctrine\Common\Persistence\ObjectManager;
 use App\Services\VerifFilm;
+use Symfony\Component\Serializer\Encoder\CsvEncoder;
+use Symfony\Component\Serializer\Normalizer\ObjectNormalizer;
+use Symfony\Component\Serializer\Serializer;
 
 
 class BlogController extends AbstractController
@@ -92,5 +97,77 @@ class BlogController extends AbstractController
         return $this->render('blog/film.html.twig', [
             'controller_name' => 'BlogController',
         ]);
+    }
+
+    /**
+     * @Route("/import", name="import")
+     */
+    public function import(Request $request, EntityManagerInterface $manager)
+    {
+
+        $upload = new UploadFile();
+        $form= $this->createFormBuilder($upload)
+            ->add('name', FileType::class,[
+                'label' => 'Choisissez un fichier',
+            ])
+            ->add('submit', SubmitType::class,[
+                'label' => 'Valider',
+                'attr'=>[
+                    'style' => 'margin-top:1em;'
+                ]
+            ])
+            ->getForm();
+
+        $form->handleRequest($request);
+
+        if($form->isSubmitted() && $form->isValid()){
+            $file = $upload->getName();
+            $fileName = md5(uniqid()).'.'.$file->getClientOriginalExtension();
+            $file->move($this->getParameter('upload_directory'), $fileName);
+
+            if($this->verifyExt($fileName)==true){
+                foreach ($this->getDataFromFile($fileName) as $row){
+                    $film = new Film();
+                    $film
+                        ->setName($row['name'])
+                        ->setDescription($row['description'])
+                        ->setNote($row['score'])
+                        ->setVotersNumber(1)
+                    ;
+                    $manager->persist($film);
+                }
+                $manager->flush();
+                $this->addFlash('success',"L'ajout a bien fonctionné");
+            }
+
+
+
+        }
+        return $this->render('blog/import.html.twig',[
+            'importForm' => $form->createView(),
+        ]);
+    }
+
+    private function getDataFromFile($fileName){
+
+        $file = $this->getParameter('upload_directory').$fileName;
+        $fileExt = pathinfo($fileName, PATHINFO_EXTENSION);
+        $normalizer = [new ObjectNormalizer()];
+        $encoder = [new CsvEncoder()];
+        $serializer = new Serializer($normalizer, $encoder);
+        $fileString = file_get_contents($file);
+        $data = $serializer->decode($fileString,$fileExt);
+
+        return $data;
+    }
+
+    private function verifyExt($fileName){
+
+        $fileExt = pathinfo($fileName, PATHINFO_EXTENSION);
+        if ($fileExt!='csv'){
+            $this->addFlash('error',"Erreur : le fichier n'est pas au format '.csv'.");
+            return False;
+        }
+        return True;
     }
 }

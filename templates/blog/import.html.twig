@@ -1,10 +1,12 @@
 {% extends 'base.html.twig' %}
-{% form_theme form 'bootstrap_5_layout.html.twig' %}
+{% form_theme importForm 'bootstrap_5_layout.html.twig' %}
+
 
 {% block body %}
-    <h1>Ajouter d'un film :</h1>
 
-    {{ form(form) }}
+    <h2>Importer un fichier CSV : </h2>
+
+    {{ form(importForm) }}
 
     {% for message in app.flashes('success') %}
         <div class="alert alert-success">
